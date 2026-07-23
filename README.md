@@ -478,6 +478,313 @@ Once the aggregator returns a status report, the interface shifts from sketch ex
 ---
 
 
+The client’s (Business Expert) statement is showing other services. It moves the project from a focused “parcel status + permitting” tool to a **full Building Lifecycle platform**. This is a natural and powerful expansion of what we have already explained.
+
+### How it fits with current foundation
+
+The architecture we built is well-suited for this expansion:
+
+- **Ontology as ubiquitous language** remains the correct center.  
+- **Modular OWL extensions** allow us to add new domains without breaking existing ones.  
+- **Publisher/Subscriber model** (via the message broker) is ideal for a lifecycle system, because each stage produces events that other stages can react to.
+
+The current **Parcel Analysis → Status Report** flow (RegistrationPlateID / پلاک ثبتی) is actually the *correct first processing node*. It is the natural entry point into the entire lifecycle.
+
+### Mapping the client’s lifecycle stages to Processing Nodes
+
+Here is how I would interpret the Persian description in terms of our distributed pipeline:
+
+| Client Stage (Persian)              | English                        | Likely Role in Pipeline                  | Notes |
+|-------------------------------------|--------------------------------|------------------------------------------|-------|
+| تحلیل پلاک                          | Parcel Analysis                | **Publisher + Aggregator** (current focus) | Entry point – already designed |
+| اخذ پروانه                          | Permit Obtaining               | Publisher + Subscriber                   | Heavy rule-engine usage |
+| طراحی                               | Design                         | Subscriber (BIM, documents) + Publisher  | Strong link to BOT + Documentation layer |
+| ساخت                                | Construction                   | Publisher (progress events)              | Site updates, material consumption |
+| مدیریت پروژه                        | Project Management             | Orchestrator / Coordinator               | Cross-cutting |
+| تأمین مصالح                         | Material Supply                | Subscriber + Publisher                   | Links to Material layer |
+| پرداخت‌ها                           | Payments                       | Subscriber (triggers) + Publisher        | Needs finance concepts |
+| فروش                                | Sales / Transfer               | Publisher (ownership change)             | Critical for ownership history |
+| نگهداری / تعمیرات                   | Maintenance / Repairs          | Subscriber + Publisher                   | Asset management phase |
+| مدیریت دارایی                       | Asset Management               | Long-term Subscriber                     | Post-occupancy |
+| ارتباط با بانک، بیمه، شهرداری...   | Bank, Insurance, Municipality… | External Subscribers / API Gateways      | Stakeholder integration |
+
+Many of these will act as **both** Publishers and Subscribers depending on the moment in the lifecycle.
+
+### Strategic Recommendation
+
+1. **Keep the current scope as Phase 1**  
+   Finish and validate the Parcel Analysis → Status Report vertical properly (ontology + Figma views + first services). This gives the client something concrete and valuable very quickly.
+
+2. **Treat the full lifecycle as the product vision**  
+   Document it clearly in the README as the long-term target. This shows the client that the architecture is not limited.
+
+3. **Evolve the ontology modularly**  
+   We will need new modules over time, for example:
+   - `mdhn-lifecycle.ttl` (stages, transitions, milestones)
+   - Stronger Stakeholder / Actor model (Bank, Insurer, Contractor, Supplier, etc.)
+   - Financial concepts (Payment, Invoice, Guarantee…)
+   - Asset & Maintenance concepts
+
+4. **Define a Domain Event Catalog early**  
+   The message broker should carry clear business events, e.g.:
+   - `ParcelSelected`
+   - `PermitApplicationSubmitted`
+   - `PermitIssued`
+   - `DesignApproved`
+   - `ConstructionStarted`
+   - `OwnershipTransferred`
+   - `MaintenanceRequested`
+   
+   These events become the backbone of the distributed system.
+
+### Overall Opinion
+
+The client is describing a **Digital Construction Workplace / Building Lifecycle Platform**. This is ambitious but coherent. Our current ontology + map-centric + pub/sub foundation is a strong starting point precisely because it is modular and event-driven.
+
+The biggest risk is scope creep. We should explicitly agree with the client on prioritization:
+
+**Position of the Rule Engine in the Publisher/Subscriber pipeline**
+
+The Rule Engine should be treated as a **first-class, specialized Processing Node** (a dedicated Rule Evaluation Service) rather than being buried inside every other service.
+
+### Recommended placement
+
+```
+Event → Message Broker → Rule Evaluation Service → Decision Event → Orchestrator / Other Nodes
+```
+
+**Detailed flow:**
+
+1. A Processing Node (e.g. Parcel Analysis or Permit Application) publishes a domain event  
+   (`ParcelSelected`, `PermitApplicationSubmitted`, `DesignSubmitted`…).
+
+2. The **Rule Evaluation Service** subscribes to these decision-relevant events.
+
+3. It loads the current facts from the Knowledge Graph (the ontology instances for that `RegistrationPlateID` / Building / Application).
+
+4. It selects and evaluates the applicable rules (filtered by district, building type, lifecycle stage, etc.).
+
+5. It publishes a clear **Decision Event**:
+   - `RulesEvaluationPassed` (Happy Path)
+   - `RulesEvaluationFailed` (with structured reason codes)
+   - `NeedsAdditionalInformation`
+   - `Exception` (with suggested retry policy or escalation path)
+
+6. The Orchestrator and other subscribers react to these decision events and determine the actual next step in the flow.
+
+This design keeps rules **centralized, versioned, auditable, and consistent** — which is essential for municipal regulations that differ across Tehran’s 22 districts.
+
+### Rule Ingestion Pipeline (PDF / DOCX → Executable Rules)
+
+You correctly identified the real-world problem: most regulations arrive as PDF or DOCX.
+
+**Recommended staged approach:**
+
+| Stage | Description | Responsibility |
+|-------|-------------|----------------|
+| 1. Ingestion | Upload official PDF/DOCX circulars and codes | Admin / Domain expert |
+| 2. Extraction | Text + structure extraction (layout-aware) | Semi-automated tool |
+| 3. Intermediate Representation | Transform into a structured, human-readable rule format that supports AND / OR / NOT and references ontology terms | Transformation service + human review |
+| 4. Validation & Approval | Legal/domain expert reviews and approves the formalized rules | Municipality expert |
+| 5. Compilation | Convert intermediate form into the final engine’s language | Rule Engine adapter |
+| 6. Activation | Versioned rule set becomes active for specific districts / stages | Rule Repository |
+
+**For now (as you said):**  
+Assume a flexible Rule Engine that can accept an intermediate language. Good practical choices for the intermediate layer:
+
+- A controlled YAML / JSON rule DSL (easy to version and review)
+- DMN decision tables (very readable for business experts)
+- Or a combination of SHACL shapes + SPARQL for ontology-native constraints
+
+The final engine can later be Drools, a lightweight custom engine, or even a hybrid (SHACL for structural constraints + a production rule engine for complex logic).
+
+### How the Rule Engine determines Flows (Happy Path vs Exceptions)
+
+The Rule Engine does **not** execute the whole business process. It **decides** and publishes the outcome. The Orchestrator (or a workflow engine) uses those decisions as gateways.
+
+**Example decision outcomes:**
+
+- **Happy Path**: All mandatory rules pass → continue to next lifecycle stage.
+- **Soft Exception**: Missing document or temporary data issue → `NeedsAdditionalInformation` + retry policy (e.g., “retry in 30 minutes” or “notify applicant”).
+- **Hard Exception**: Clear regulatory violation → route to manual review or rejection path.
+- **Conditional Path**: Some rules pass only under certain conditions → different downstream branches.
+
+Retry policies can be attached to specific exception codes (declared in the rules themselves or in a separate policy table). This keeps the retry logic declarative and auditable.
+
+### Relation to the Ontology
+
+Rules should be tightly bound to the ontology:
+
+- Conditions reference ontology classes and properties (`mdhn:locatedInDistrict`, `mdhn:hasFoundationDesign`, height, zoning class, ownership status, etc.).
+- This guarantees that the ubiquitous language used by business experts is the same language the rules use.
+- When the ontology evolves, rules can be validated against it (e.g., via SHACL).
+
+### Suggested high-level architecture diagram
+
+```mermaid
+flowchart TB
+    subgraph Sources
+        PDF[PDF / DOCX Regulations]
+    end
+
+    subgraph Rule Management
+        TR[Transformation Service]
+        IR[Intermediate Rules<br/>YAML / DMN / DSL]
+        RR[Rule Repository<br/>Versioned + District-scoped]
+    end
+
+    subgraph Runtime
+        MB[Message Broker]
+        RES[Rule Evaluation Service]
+        KG[Knowledge Graph<br/>Ontology Instances]
+        ORCH[Orchestrator / Workflow]
+    end
+
+    PDF --> TR --> IR --> RR
+    RR --> RES
+
+    PN[Other Processing Nodes] -->|Domain Event| MB
+    MB -->|Decision-relevant events| RES
+    RES -->|Query facts| KG
+    RES -->|Decision Event<br/>Passed / Failed / Exception / Retry| MB
+    MB --> ORCH
+    ORCH -->|Controls next Flow| PN
+```
+
+### Summary Recommendation
+
+- Make the **Rule Evaluation Service** a dedicated subscriber that owns all regulatory decisions.
+- Treat PDF/DOCX → Intermediate Representation as a first-class pipeline (with mandatory human approval).
+- Let the Rule Engine **emit decisions**, not drive the entire process. The Orchestrator turns those decisions into Happy Paths, Exception Paths, and retries.
+- Keep rules strongly linked to the ontology terms so the ubiquitous language stays consistent.
+
+This gives us a clean separation of concerns while still allowing the Rule Engine to be the ultimate authority on whether a flow can proceed.
+
+**Updated High-Level Architecture Diagram**  
+Full Building Lifecycle as Processing Nodes (Publisher/Subscriber model)
+
+```mermaid
+flowchart TB
+    %% ====================== PRESENTATION ======================
+    subgraph Presentation["Presentation Layer"]
+        UI[Map-Centric UI<br/>+ Dashboards]
+        User[Users / Stakeholders]
+    end
+
+    %% ====================== CORE INFRASTRUCTURE ======================
+    subgraph Core["Core Infrastructure"]
+        MB[[Message Broker<br/>Pub/Sub Event Bus]]
+        KG[(Knowledge Graph<br/>OWL Ontology + Instances)]
+        RES[Rule Evaluation Service]
+        ORCH[Orchestrator / Workflow Engine]
+    end
+
+    %% ====================== LIFECYCLE PROCESSING NODES ======================
+    subgraph Lifecycle["Lifecycle Processing Nodes"]
+        direction TB
+
+        subgraph Pre["Pre-Construction"]
+            PA[Parcel Analysis<br/>RegistrationPlateID]
+            PERMIT[Permit Obtaining]
+            DESIGN[Design<br/>BIM / Documents]
+        end
+
+        subgraph During["Construction Phase"]
+            PM[Project Management]
+            MAT[Material Supply]
+            CONST[Construction<br/>Progress & Site]
+            PAY[Payments]
+        end
+
+        subgraph Post["Post-Construction / Asset"]
+            SALE[Sales / Ownership Transfer]
+            MAINT[Maintenance]
+            REPAIR[Repairs]
+            ASSET[Asset Management]
+        end
+    end
+
+    %% ====================== EXTERNAL STAKEHOLDERS ======================
+    subgraph External["External Stakeholders & Gateways"]
+        MUNI[Municipality Services]
+        BANK[Bank / Finance]
+        INS[Insurance]
+        OTHER[Other Authorities]
+    end
+
+    %% ====================== CONNECTIONS ======================
+    User --> UI
+    UI <--> PA
+    UI <--> PERMIT
+    UI <--> DESIGN
+    UI <--> ASSET
+
+    %% All nodes talk through the broker
+    PA --> MB
+    PERMIT --> MB
+    DESIGN --> MB
+    PM --> MB
+    MAT --> MB
+    CONST --> MB
+    PAY --> MB
+    SALE --> MB
+    MAINT --> MB
+    REPAIR --> MB
+    ASSET --> MB
+
+    MB --> PA
+    MB --> PERMIT
+    MB --> DESIGN
+    MB --> PM
+    MB --> MAT
+    MB --> CONST
+    MB --> PAY
+    MB --> SALE
+    MB --> MAINT
+    MB --> REPAIR
+    MB --> ASSET
+
+    %% Rule Engine & Orchestrator
+    MB <--> RES
+    RES <--> KG
+    MB <--> ORCH
+    ORCH <--> KG
+
+    %% Knowledge Graph is the shared truth
+    PA --> KG
+    PERMIT --> KG
+    DESIGN --> KG
+    CONST --> KG
+    SALE --> KG
+    ASSET --> KG
+
+    %% External systems
+    MB <--> MUNI
+    MB <--> BANK
+    MB <--> INS
+    MB <--> OTHER
+```
+
+### How to read this diagram
+
+- **Presentation Layer**: The map-centric UI is the main entry point (especially for Parcel Analysis).
+- **Core Infrastructure** (center):
+  - **Message Broker** is the backbone of the distributed system.
+  - **Knowledge Graph** (our BOT + mdhn ontology) is the single source of truth.
+  - **Rule Evaluation Service** listens to events, evaluates rules, and publishes decisions (Happy Path / Exception / Retry).
+  - **Orchestrator** reacts to decision events and coordinates longer-running flows.
+- **Lifecycle Processing Nodes**: Each major stage from the client’s description is modeled as a Processing Node.  
+  Nodes both **publish** domain events and **subscribe** to relevant events from other nodes.
+- **External Stakeholders**: Connected via the same event bus (or through dedicated gateways).
+
+### Key architectural principles illustrated
+
+1. Every lifecycle stage is a Processing Node that communicates only through events.
+2. The Rule Engine sits centrally and influences flow decisions without owning the entire process.
+3. The Ontology/Knowledge Graph is continuously enriched by all nodes.
+4. The system can grow stage-by-stage (start with Parcel Analysis + Permit, then add Design, Construction, etc.).
+
+Would you like a second, more detailed version that also shows the main domain events flowing between these nodes (e.g. `ParcelSelected`, `PermitIssued`, `OwnershipTransferred`…)?
 
 
 
