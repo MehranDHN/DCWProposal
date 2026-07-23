@@ -281,6 +281,71 @@ Because documents and materials are explicitly linked, rules can require the exi
 @prefix prov: <http://www.w3.org/ns/prov#> .
 ```
 
+
+## Simple flow in an Ontology-based approach
+
+```mermaid
+flowchart TD
+    A[User selects parcel<br/>on Map] --> B[Resolve Polygon → LandParcel<br/>via RegistrationPlateID<br/>پلاک ثبتی]
+    B --> C{Authenticate User}
+    C -->|Fail| Z[Access Denied]
+    C -->|Success| D[Processing Node<br/>queries core data]
+    D --> E[Publish Event to Orchestrator<br/>keyed by RegistrationPlateID]
+    
+    E --> F1[Ownership Service]
+    E --> F2[Authority Service]
+    E --> F3[Geometry / Area Service]
+    E --> F4[Zoning & District Service]
+    E --> F5[Permit / Status Service]
+    
+    F1 --> G[Collect Contributions]
+    F2 --> G
+    F3 --> G
+    F4 --> G
+    F5 --> G
+    
+    G --> H[Aggregator builds<br/>mdhn:StatusReport]
+    H --> I[Return Brief Status Report<br/>to User]
+    
+    style A fill:#e1f5fe
+    style H fill:#c8e6c9
+    style I fill:#c8e6c9
+    style E fill:#fff3e0
+```
+
+### Sequence view (more detailed):
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant M as Map UI
+    participant P as Processing Node
+    participant O as Orchestrator
+    participant S1 as Ownership Svc
+    participant S2 as Authority Svc
+    participant S3 as Other Subscribers
+    participant A as Aggregator
+
+    U->>M: Select Polygon on map
+    M->>P: RegistrationPlateID + User Token
+    P->>P: Authenticate
+    P->>P: Load basic LandParcel data
+    P->>O: Publish "ParcelSelected" event<br/>(RegistrationPlateID)
+    
+    par Parallel contributions
+        O->>S1: Event
+        S1-->>A: Owner profile(s) + shares
+        O->>S2: Event
+        S2-->>A: AuthorityReport
+        O->>S3: Event
+        S3-->>A: Area, Zoning, Status, ...
+    end
+    
+    A->>A: Build StatusReport
+    A->>P: Aggregated StatusReport
+    P->>U: Brief report (Status of Land/Building)
+```
+
 ## Licence & Access
 
 Private repository. Internal use only for the client project and authorised contributors.
