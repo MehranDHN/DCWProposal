@@ -62,6 +62,41 @@ A rule engine (SHACL + SPARQL / external engine) evaluates applications against 
          + GeoSPARQL geometries on spatial entities
 ```
 
+
+
+
+
+
+### 1. TTL file (combined entry point)
+
+
+
+### 2. Brief version already added to README
+
+**Ontology at a Glance (Brief)**
+
+We keep the official **Building Topology Ontology (BOT)** pure for physical structure  
+(`bot:Site` → `bot:Building` → `bot:Storey` → `bot:Space` → `bot:Element`).
+
+Two extension modules add the rest of the domain:
+
+| Module | File | Main content |
+|--------|------|--------------|
+| **Core** | `ontology/mdhn-core.ttl` | 22 Administrative Districts, Land Parcels, Zoning Classes + spatial relations + GeoSPARQL readiness |
+| **Documentation** | `ontology/mdhn-documentation.ttl` | Plans, Geotechnical Reports, Foundation Designs, BIM Models (Revit/IFC), Materials + typed links to BOT entities |
+| **Full entry point** | `ontology/mdhn-full.ttl` | Imports both modules + BOT |
+
+**Key linking pattern**  
+Documents and materials are attached to the most specific BOT entity possible:
+
+- Site / Parcel → Geotechnical report, Site plan, Zoning map  
+- Building → Foundation design, Architectural & Structural plans, BIM model  
+- Element → Material / Product type  
+
+This keeps the rule engine simple (“does this building in District 5 have an approved FoundationDesign?”) and the map UI rich (click → topology + all attached documents).
+
+---
+
 ### 1. Core – Building Topology Ontology (BOT)
 
 Namespace: `https://w3id.org/bot#`  
