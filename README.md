@@ -425,25 +425,27 @@ The platform's ontology treats Building Topology Ontology (BOT) as the physical-
 
 *The two screens below correspond to the first step (selection) and the last step (status report) of that flow.*
 
-## 3. Screen 1 — Parcel selection (wireframe)
+## 3. Screen 1 - Parcel selection (wireframe)
 
 Deliberately kept low-fidelity so the team can agree on structure and interaction before investing in visual polish. Sketch-style annotations mark the parts of the flow that are backed by the pub/sub architecture rather than plain UI state.
 
-*Fig. 1 — Wireframe sketch: map with selectable parcels, search by Registration Plate ID, and the resulting selection panel.*
+![Fig. 1 - Wireframe sketch](images/parcel-selection-wireframe.png)
+*Fig. 1 - Wireframe sketch: map with selectable parcels, search by Registration Plate ID, and the resulting selection panel.*
 
 ### Key elements
 
-- **Search field** — looks up a parcel directly by Registration Plate ID, as an alternative to clicking the map.
-- **Map canvas** — district boundary shown as a soft outline; individual parcels are tappable polygons; the active selection is highlighted.
-- **Selection panel** — surfaces the resolved Registration Plate ID and district immediately, while area and further detail are marked pending until the status-report services respond.
-- **Sign-in state** — shown persistently in the top bar; an annotation calls out that selection on an unauthenticated session should short-circuit to Access denied, per the architecture's authentication gate.
-- **"Behind the click" checklist** — a design-only annotation, not shipped UI, tracing which of the five pipeline steps a given interaction has reached, to keep the mockup honest about latency (the aggregate step is not instant).
+- **Search field** - looks up a parcel directly by Registration Plate ID, as an alternative to clicking the map.
+- **Map canvas** - district boundary shown as a soft outline; individual parcels are tappable polygons; the active selection is highlighted.
+- **Selection panel** - surfaces the resolved Registration Plate ID and district immediately, while area and further detail are marked pending until the status-report services respond.
+- **Sign-in state** - shown persistently in the top bar; an annotation calls out that selection on an unauthenticated session should short-circuit to Access denied, per the architecture's authentication gate.
+- **"Behind the click" checklist** - a design-only annotation, not shipped UI, tracing which of the five pipeline steps a given interaction has reached, to keep the mockup honest about latency (the aggregate step is not instant).
 
-## 4. Screen 2 — Status report (Material view)
+## 4. Screen 2 - Status report (Material view)
 
 Once the aggregator returns a status report, the interface shifts from sketch exploration to a production-quality Material Design surface. Each card on the screen maps directly to one contributing service, which keeps the UI legible even as more services are added later.
 
-*Fig. 2 — Material Design status report for a selected parcel, assembled from the five subscriber services.*
+![Fig. 2 - Material Design status report](images/parcel-selection-wireframe.png)
+*Fig. 2 - Material Design status report for a selected parcel, assembled from the five subscriber services.*
 
 ### Section-to-service mapping
 
@@ -460,10 +462,10 @@ Once the aggregator returns a status report, the interface shifts from sketch ex
 
 ## 5. Design rationale
 
-- **Two fidelities, two purposes** — the wireframe is for agreeing on structure and data availability; the Material screen is for evaluating the shipped visual language against Tehran-municipality branding expectations.
-- **Every card traces to a service** — this keeps the aggregator's contract visible in the UI and makes it easy to spot a missing or delayed contribution (see the "BIM model — Required" state in Fig. 2).
-- **Status uses colour + icon, never colour alone** — the permit stepper and document states use both a check icon and a label so the report stays legible for colour-blind users and in print.
-- **The wireframe encodes the pipeline, the Material screen hides it** — end users of the finished report should not need to know about the message broker; that context is deliberately confined to the design annotations.
+- **Two fidelities, two purposes** - the wireframe is for agreeing on structure and data availability; the Material screen is for evaluating the shipped visual language against Tehran-municipality branding expectations.
+- **Every card traces to a service** - this keeps the aggregator's contract visible in the UI and makes it easy to spot a missing or delayed contribution (see the "BIM model - Required" state in Fig. 2).
+- **Status uses colour + icon, never colour alone** - the permit stepper and document states use both a check icon and a label so the report stays legible for colour-blind users and in print.
+- **The wireframe encodes the pipeline, the Material screen hides it** - end users of the finished report should not need to know about the message broker; that context is deliberately confined to the design annotations.
 
 ## 6. Open questions / next steps
 
@@ -475,7 +477,7 @@ Once the aggregator returns a status report, the interface shifts from sketch ex
 
 ---
 
-*Reference: MehranDHN/DCWProposal — Tehran Construction Ontology & Distributed Map-Based Platform (private repository).*
+
 
 
 
@@ -484,5 +486,4 @@ Once the aggregator returns a status report, the interface shifts from sketch ex
 Private repository. Internal use only for the client project and authorised contributors.
 
 ---
-
-*This README captures the shared understanding reached in the initial design discussions. It will evolve as the ontology modules are formalised and the first workflows are validated with domain experts.*
+*Reference: MehranDHN/DCWProposal - Tehran Construction Ontology & Distributed Map-Based Platform (private repository).*
