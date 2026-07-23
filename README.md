@@ -444,7 +444,7 @@ Deliberately kept low-fidelity so the team can agree on structure and interactio
 
 Once the aggregator returns a status report, the interface shifts from sketch exploration to a production-quality Material Design surface. Each card on the screen maps directly to one contributing service, which keeps the UI legible even as more services are added later.
 
-![Fig. 2 - Material Design status report](images/parcel-selection-wireframe.png)
+![Fig. 2 - Material Design status report](images/parcel-status-report-material.png)
 *Fig. 2 - Material Design status report for a selected parcel, assembled from the five subscriber services.*
 
 ### Section-to-service mapping
