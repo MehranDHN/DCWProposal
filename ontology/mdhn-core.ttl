@@ -1,0 +1,349 @@
+# =============================================================================
+# mdhn-ontology.ttl
+# Tehran Construction Ontology – Complete self-contained file
+# (BOT + Administrative/Spatial + Documentation/Materials extensions)
+#
+# Load this single file in Protégé, WebVOWL, GraphDB, etc. for visualization.
+# It still depends on the official BOT ontology for the core topology classes.
+# =============================================================================
+
+@prefix rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:      <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:      <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms:  <http://purl.org/dc/terms/> .
+@prefix vann:     <http://purl.org/vocab/vann/> .
+@prefix prov:     <http://www.w3.org/ns/prov#> .
+@prefix bot:      <https://w3id.org/bot#> .
+@prefix geo:      <http://www.opengis.net/ont/geosparql#> .
+@prefix mdhn:     <https://w3id.org/mdhn/tehran-construction#> .
+
+##############################################################################
+# Ontology Declaration
+##############################################################################
+
+<https://w3id.org/mdhn/tehran-construction>
+    a owl:Ontology ;
+    dcterms:title "Tehran Construction Ontology"@en ;
+    dcterms:description """OWL ontology for a distributed map-based construction permitting
+and compliance platform focused on Tehran Municipality (22 districts).
+Extends the Building Topology Ontology (BOT) with administrative geography,
+design documents, geotechnical reports, foundation designs, BIM models and materials."""@en ;
+    dcterms:created "2026-07-23"^^xsd:date ;
+    dcterms:modified "2026-07-23"^^xsd:date ;
+    vann:preferredNamespacePrefix "mdhn" ;
+    vann:preferredNamespaceUri "https://w3id.org/mdhn/tehran-construction#" ;
+    owl:versionInfo "0.1.0" ;
+    owl:imports <https://w3id.org/bot#> ;
+    rdfs:comment "Load together with the official BOT ontology (https://w3id.org/bot/bot.ttl)."@en .
+
+
+##############################################################################
+# 1. ADMINISTRATIVE & SPATIAL LAYER
+##############################################################################
+
+### Classes
+
+mdhn:AdministrativeDistrict
+    a owl:Class ;
+    rdfs:label "Administrative District"@en , "منطقه شهرداری"@fa ;
+    rdfs:comment "One of the 22 official municipal districts (مناطق) of Tehran. Each district may have its own construction rules and procedures."@en ;
+    rdfs:subClassOf geo:Feature .
+
+mdhn:SubDistrict
+    a owl:Class ;
+    rdfs:label "Sub-District / Neighborhood"@en , "ناحیه / محله"@fa ;
+    rdfs:comment "A finer administrative or informal neighborhood unit inside a district."@en ;
+    rdfs:subClassOf geo:Feature .
+
+mdhn:LandParcel
+    a owl:Class ;
+    rdfs:label "Land Parcel"@en , "قطعه زمین / پلاک ثبتی"@fa ;
+    rdfs:comment "The legal cadastral unit on which a construction project sits. Usually linked to a bot:Site."@en ;
+    rdfs:subClassOf geo:Feature .
+
+mdhn:ZoningClass
+    a owl:Class ;
+    rdfs:label "Zoning Class"@en , "کاربری زمین"@fa ;
+    rdfs:comment "Land-use / zoning category (residential, commercial, mixed-use, industrial, restricted, green space, etc.)."@en .
+
+
+### Object Properties
+
+mdhn:locatedInDistrict
+    a owl:ObjectProperty ;
+    rdfs:label "located in district"@en ;
+    rdfs:comment "Links a site, parcel, building or any spatial feature to its Administrative District."@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Site bot:Building mdhn:LandParcel geo:Feature ) ] ;
+    rdfs:range mdhn:AdministrativeDistrict .
+
+mdhn:locatedInSubDistrict
+    a owl:ObjectProperty ;
+    rdfs:label "located in sub-district"@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Site bot:Building mdhn:LandParcel ) ] ;
+    rdfs:range mdhn:SubDistrict .
+
+mdhn:hasSubDistrict
+    a owl:ObjectProperty ;
+    rdfs:label "has sub-district"@en ;
+    rdfs:domain mdhn:AdministrativeDistrict ;
+    rdfs:range mdhn:SubDistrict ;
+    owl:inverseOf mdhn:isSubDistrictOf .
+
+mdhn:isSubDistrictOf
+    a owl:ObjectProperty ;
+    rdfs:label "is sub-district of"@en .
+
+mdhn:subjectToZoning
+    a owl:ObjectProperty ;
+    rdfs:label "subject to zoning"@en ;
+    rdfs:comment "Links a land parcel or site to its applicable ZoningClass."@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Site mdhn:LandParcel ) ] ;
+    rdfs:range mdhn:ZoningClass .
+
+mdhn:hasParcel
+    a owl:ObjectProperty ;
+    rdfs:label "has parcel"@en ;
+    rdfs:comment "Links a bot:Site to its legal LandParcel (usually 1:1)."@en ;
+    rdfs:domain bot:Site ;
+    rdfs:range mdhn:LandParcel ;
+    owl:inverseOf mdhn:parcelOf .
+
+mdhn:parcelOf
+    a owl:ObjectProperty ;
+    rdfs:label "parcel of"@en .
+
+
+### Data Properties
+
+mdhn:districtCode
+    a owl:DatatypeProperty ;
+    rdfs:label "district code"@en ;
+    rdfs:comment "Official numeric code of the district (1–22)."@en ;
+    rdfs:domain mdhn:AdministrativeDistrict ;
+    rdfs:range xsd:integer .
+
+mdhn:districtNameFa
+    a owl:DatatypeProperty ;
+    rdfs:label "district name (Persian)"@en ;
+    rdfs:domain mdhn:AdministrativeDistrict ;
+    rdfs:range xsd:string .
+
+mdhn:cadastralId
+    a owl:DatatypeProperty ;
+    rdfs:label "cadastral identifier"@en , "شماره پلاک ثبتی"@fa ;
+    rdfs:domain mdhn:LandParcel ;
+    rdfs:range xsd:string .
+
+mdhn:zoningCode
+    a owl:DatatypeProperty ;
+    rdfs:label "zoning code"@en ;
+    rdfs:domain mdhn:ZoningClass ;
+    rdfs:range xsd:string .
+
+
+##############################################################################
+# 2. DESIGN, DOCUMENTATION & MATERIALS LAYER
+##############################################################################
+
+### Information Resource hierarchy
+
+mdhn:InformationResource
+    a owl:Class ;
+    rdfs:label "Information Resource"@en ;
+    rdfs:comment "Any document, model or specification that describes or constrains a building, site or element."@en .
+
+mdhn:DesignDocument
+    a owl:Class ;
+    rdfs:subClassOf mdhn:InformationResource ;
+    rdfs:label "Design Document"@en ;
+    rdfs:comment "A design or engineering document produced during the project lifecycle."@en .
+
+mdhn:ArchitecturalPlan
+    a owl:Class ;
+    rdfs:subClassOf mdhn:DesignDocument ;
+    rdfs:label "Architectural Plan"@en , "نقشه معماری"@fa .
+
+mdhn:StructuralPlan
+    a owl:Class ;
+    rdfs:subClassOf mdhn:DesignDocument ;
+    rdfs:label "Structural Plan"@en , "نقشه سازه"@fa .
+
+mdhn:FoundationDesign
+    a owl:Class ;
+    rdfs:subClassOf mdhn:DesignDocument ;
+    rdfs:label "Foundation Design"@en , "طرح پی / فونداسیون"@fa ;
+    rdfs:comment "Detailed foundation design document, usually required for permit approval."@en .
+
+mdhn:GeotechnicalReport
+    a owl:Class ;
+    rdfs:subClassOf mdhn:DesignDocument ;
+    rdfs:label "Geotechnical Report"@en , "گزارش ژئوتکنیک"@fa ;
+    rdfs:comment "Soil investigation / geotechnical engineering report for the site."@en .
+
+mdhn:SitePlan
+    a owl:Class ;
+    rdfs:subClassOf mdhn:DesignDocument ;
+    rdfs:label "Site Plan"@en , "نقشه سایت"@fa .
+
+mdhn:ZoningMap
+    a owl:Class ;
+    rdfs:subClassOf mdhn:DesignDocument ;
+    rdfs:label "Zoning Map"@en .
+
+mdhn:CadastralMap
+    a owl:Class ;
+    rdfs:subClassOf mdhn:DesignDocument ;
+    rdfs:label "Cadastral Map"@en , "نقشه ثبتی"@fa .
+
+mdhn:BIMModel
+    a owl:Class ;
+    rdfs:subClassOf mdhn:InformationResource ;
+    rdfs:label "BIM Model"@en ;
+    rdfs:comment "A Building Information Model (Revit project, IFC file, etc.) that is the source of topology and materials."@en .
+
+mdhn:MaterialSpecification
+    a owl:Class ;
+    rdfs:subClassOf mdhn:InformationResource ;
+    rdfs:label "Material Specification"@en .
+
+
+### Material & Product classes
+
+mdhn:Material
+    a owl:Class ;
+    rdfs:label "Material"@en , "مصالح"@fa ;
+    rdfs:comment "A construction material with defined properties (concrete grade, steel type, etc.)."@en .
+
+mdhn:BuildingProduct
+    a owl:Class ;
+    rdfs:label "Building Product"@en ;
+    rdfs:comment "A product type as defined in Revit families, IFC types or manufacturer catalogues."@en .
+
+
+### Object Properties – linking documents to BOT entities
+
+mdhn:hasInformationResource
+    a owl:ObjectProperty ;
+    rdfs:label "has information resource"@en ;
+    rdfs:comment "Generic link from any BOT zone or element to an InformationResource."@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Zone bot:Element ) ] ;
+    rdfs:range mdhn:InformationResource ;
+    owl:inverseOf mdhn:documents .
+
+mdhn:documents
+    a owl:ObjectProperty ;
+    rdfs:label "documents"@en .
+
+# Typed properties (preferred for rules and UI)
+
+mdhn:hasFoundationDesign
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf mdhn:hasInformationResource ;
+    rdfs:label "has foundation design"@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Building bot:Site ) ] ;
+    rdfs:range mdhn:FoundationDesign .
+
+mdhn:hasGeotechnicalReport
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf mdhn:hasInformationResource ;
+    rdfs:label "has geotechnical report"@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Site mdhn:LandParcel ) ] ;
+    rdfs:range mdhn:GeotechnicalReport .
+
+mdhn:hasArchitecturalPlan
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf mdhn:hasInformationResource ;
+    rdfs:label "has architectural plan"@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Building bot:Storey bot:Space ) ] ;
+    rdfs:range mdhn:ArchitecturalPlan .
+
+mdhn:hasStructuralPlan
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf mdhn:hasInformationResource ;
+    rdfs:label "has structural plan"@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Building bot:Storey ) ] ;
+    rdfs:range mdhn:StructuralPlan .
+
+mdhn:hasSitePlan
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf mdhn:hasInformationResource ;
+    rdfs:label "has site plan"@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Site mdhn:LandParcel ) ] ;
+    rdfs:range mdhn:SitePlan .
+
+mdhn:hasBIMModel
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf mdhn:hasInformationResource ;
+    rdfs:label "has BIM model"@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Building bot:Site ) ] ;
+    rdfs:range mdhn:BIMModel .
+
+mdhn:hasMaterialSpecification
+    a owl:ObjectProperty ;
+    rdfs:subPropertyOf mdhn:hasInformationResource ;
+    rdfs:label "has material specification"@en ;
+    rdfs:range mdhn:MaterialSpecification .
+
+
+### Material linking properties
+
+mdhn:hasMaterial
+    a owl:ObjectProperty ;
+    rdfs:label "has material"@en ;
+    rdfs:comment "Links a bot:Element (or product) to the Material it is made of."@en ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( bot:Element mdhn:BuildingProduct ) ] ;
+    rdfs:range mdhn:Material .
+
+mdhn:hasProductType
+    a owl:ObjectProperty ;
+    rdfs:label "has product type"@en ;
+    rdfs:domain bot:Element ;
+    rdfs:range mdhn:BuildingProduct .
+
+
+### Data Properties for documents & materials
+
+mdhn:fileURI
+    a owl:DatatypeProperty ;
+    rdfs:label "file URI"@en ;
+    rdfs:domain mdhn:InformationResource ;
+    rdfs:range xsd:anyURI .
+
+mdhn:version
+    a owl:DatatypeProperty ;
+    rdfs:label "version"@en ;
+    rdfs:domain mdhn:InformationResource ;
+    rdfs:range xsd:string .
+
+mdhn:approvalStatus
+    a owl:DatatypeProperty ;
+    rdfs:label "approval status"@en ;
+    rdfs:comment "e.g. Draft, Submitted, Approved, Rejected, Superseded"@en ;
+    rdfs:domain mdhn:InformationResource ;
+    rdfs:range xsd:string .
+
+mdhn:materialStandard
+    a owl:DatatypeProperty ;
+    rdfs:label "material standard"@en ;
+    rdfs:comment "Iranian or international standard code (e.g. ISIRI, ASTM…)"@en ;
+    rdfs:domain mdhn:Material ;
+    rdfs:range xsd:string .
+
+mdhn:strengthClass
+    a owl:DatatypeProperty ;
+    rdfs:label "strength class"@en ;
+    rdfs:domain mdhn:Material ;
+    rdfs:range xsd:string .
+
+
+##############################################################################
+# Notes for visualization & use
+##############################################################################
+# - Load this file + the official BOT ontology (https://w3id.org/bot/bot.ttl)
+# - Recommended visualizers: Protégé, WebVOWL, GraphDB Visual Graph, Ontodia
+# - Key review points:
+#     • Attachment of documents to bot:Site / bot:Building / bot:Element
+#     • District → Parcel → Site → Building hierarchy
+#     • Typed properties (hasFoundationDesign, hasGeotechnicalReport …)
+# - Next modules (not yet included): mdhn-policy.ttl and mdhn-workflow.ttl
