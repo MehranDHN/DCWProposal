@@ -280,6 +280,7 @@ Because documents and materials are explicitly linked, rules can require the exi
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 ```
+---
 
 
 ## Simple flow in an Ontology-based approach
@@ -313,6 +314,7 @@ flowchart TD
     style E fill:#fff3e0
 ```
 
+
 ### Sequence view (more detailed):
 
 ```mermaid
@@ -344,6 +346,60 @@ sequenceDiagram
     A->>A: Build StatusReport
     A->>P: Aggregated StatusReport
     P->>U: Brief report (Status of Land/Building)
+```
+### Processing Node + Message Broker (Publisher/Subscriber)
+Here is a clean, focused diagram of the node we are discussing and its interaction with the message broker:
+
+```mermaid
+flowchart LR
+    subgraph Client
+        U[User / Map UI]
+    end
+
+    subgraph "Processing Node"
+        A[1. Authenticate User]
+        B[2. Resolve RegistrationPlateID<br/>پلاک ثبتی]
+        C[3. Load basic LandParcel data]
+        D[4. Publish Event]
+        E[5. Wait for Aggregated Result]
+        F[6. Return StatusReport to User]
+    end
+
+    subgraph "Message Broker (Pub/Sub)"
+        EX[Exchange / Topic<br/>e.g. parcel.selected]
+    end
+
+    subgraph Subscribers
+        S1[Ownership Service]
+        S2[Authority Service]
+        S3[Geometry / Area Service]
+        S4[Zoning & District Service]
+        S5[Permit / Status Service]
+    end
+
+    subgraph Aggregator
+        AG[Aggregate Contributions<br/>→ mdhn:StatusReport]
+    end
+
+    U -->|Select parcel + token| A
+    A --> B --> C --> D
+    D -->|Publish<br/>RegistrationPlateID + context| EX
+
+    EX -->|Fan-out| S1
+    EX -->|Fan-out| S2
+    EX -->|Fan-out| S3
+    EX -->|Fan-out| S4
+    EX -->|Fan-out| S5
+
+    S1 -->|Contribution| AG
+    S2 -->|Contribution| AG
+    S3 -->|Contribution| AG
+    S4 -->|Contribution| AG
+    S5 -->|Contribution| AG
+
+    AG -->|StatusReport| E
+    E --> F
+    F --> U
 ```
 
 ## Licence & Access
