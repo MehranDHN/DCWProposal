@@ -401,6 +401,83 @@ flowchart LR
     E --> F
     F --> U
 ```
+# UI proposal 
+
+# Parcel selection & status report
+*From map click to a Material status report, keyed by Registration Plate ID*
+
+## 1. Purpose
+
+This document proposes the first end-to-end screen pair for the Tehran Construction Ontology & Distributed Map-Based Platform: selecting a land parcel on the map, and viewing its aggregated status report. It follows the flow already defined in the DCWProposal architecture, where a map click resolves to a LandParcel via its Registration Plate ID (پلاک ثبتی), and a fan-out of subscriber services contributes ownership, authority, geometry, zoning, and permit data that an aggregator assembles into a single status report.
+
+Two mockups are included: a low-fidelity wireframe for the exploration/selection screen, and a Material Design treatment for the resulting status report. Both are provided as standalone HTML files that render pixel-for-pixel and can be exported as PNG images (open the file in a browser and take a screenshot, or use a URL-to-image tool) or imported into Figma via any HTML-to-Figma plugin.
+
+## 2. Recap of the underlying architecture
+
+The platform's ontology treats Building Topology Ontology (BOT) as the physical-topology core, extended with an `mdhn:` module for districts, land parcels, zoning, documents, materials, policy, and workflow. The screens in this proposal sit on top of the "simple flow" already defined for parcel selection:
+
+- User selects a polygon on the map.
+- The client resolves that polygon to a LandParcel using its Registration Plate ID.
+- The user is authenticated before anything proceeds; failure shows Access denied.
+- A processing node publishes a `parcel.selected` event, keyed by the Registration Plate ID, to a message broker.
+- Ownership, Authority, Geometry/Area, Zoning & District, and Permit/Status services subscribe and each contribute a fragment.
+- An aggregator assembles the fragments into an `mdhn:StatusReport` and returns it to the user.
+
+*The two screens below correspond to the first step (selection) and the last step (status report) of that flow.*
+
+## 3. Screen 1 — Parcel selection (wireframe)
+
+Deliberately kept low-fidelity so the team can agree on structure and interaction before investing in visual polish. Sketch-style annotations mark the parts of the flow that are backed by the pub/sub architecture rather than plain UI state.
+
+*Fig. 1 — Wireframe sketch: map with selectable parcels, search by Registration Plate ID, and the resulting selection panel.*
+
+### Key elements
+
+- **Search field** — looks up a parcel directly by Registration Plate ID, as an alternative to clicking the map.
+- **Map canvas** — district boundary shown as a soft outline; individual parcels are tappable polygons; the active selection is highlighted.
+- **Selection panel** — surfaces the resolved Registration Plate ID and district immediately, while area and further detail are marked pending until the status-report services respond.
+- **Sign-in state** — shown persistently in the top bar; an annotation calls out that selection on an unauthenticated session should short-circuit to Access denied, per the architecture's authentication gate.
+- **"Behind the click" checklist** — a design-only annotation, not shipped UI, tracing which of the five pipeline steps a given interaction has reached, to keep the mockup honest about latency (the aggregate step is not instant).
+
+## 4. Screen 2 — Status report (Material view)
+
+Once the aggregator returns a status report, the interface shifts from sketch exploration to a production-quality Material Design surface. Each card on the screen maps directly to one contributing service, which keeps the UI legible even as more services are added later.
+
+*Fig. 2 — Material Design status report for a selected parcel, assembled from the five subscriber services.*
+
+### Section-to-service mapping
+
+| Section on screen | Contributing service (per repo architecture) | Data shown |
+|---|---|---|
+| Parcel summary | Geometry/Area + Zoning & District services | Registration Plate ID, district, area, zoning class, overall status |
+| Ownership | Ownership service | Owner names and ownership share |
+| Permit / status | Permit/Status service | Workflow stepper (submitted → under review → approved → construction) |
+| Geometry | Geometry/Area service | Area, perimeter, frontage |
+| Authority | Authority service | Encumbrances, court holds, verification |
+| Linked documents | Design & documentation layer (`mdhn:InformationResource`) | Geotechnical report, foundation design, BIM model, with approval state |
+
+*Card-level tags (e.g. "Permit & status service") are shown as a design aid during this review and would likely be removed from the shipped UI once the aggregation is trusted end to end.*
+
+## 5. Design rationale
+
+- **Two fidelities, two purposes** — the wireframe is for agreeing on structure and data availability; the Material screen is for evaluating the shipped visual language against Tehran-municipality branding expectations.
+- **Every card traces to a service** — this keeps the aggregator's contract visible in the UI and makes it easy to spot a missing or delayed contribution (see the "BIM model — Required" state in Fig. 2).
+- **Status uses colour + icon, never colour alone** — the permit stepper and document states use both a check icon and a label so the report stays legible for colour-blind users and in print.
+- **The wireframe encodes the pipeline, the Material screen hides it** — end users of the finished report should not need to know about the message broker; that context is deliberately confined to the design annotations.
+
+## 6. Open questions / next steps
+
+- Confirm the minimal set of mandatory statuses to show when a subscriber service times out (partial report vs. block until complete).
+- Decide whether Registration Plate ID search and map-click selection should share one resolver endpoint or two.
+- Extend the status report with a documents drawer that deep-links into the Design & Documentation layer (Site Plan, Architectural Plan, etc.).
+- Validate the Material colour palette against Tehran Municipality's own visual identity guidelines, if one exists.
+- Produce a Figma file from these HTML mockups (or rebuild natively in Figma) once the structure above is signed off, so component-level review and commenting can happen there.
+
+---
+
+*Reference: MehranDHN/DCWProposal — Tehran Construction Ontology & Distributed Map-Based Platform (private repository).*
+
+
 
 ## Licence & Access
 
